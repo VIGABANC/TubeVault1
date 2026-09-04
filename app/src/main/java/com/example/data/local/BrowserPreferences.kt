@@ -11,7 +11,8 @@ data class BrowserSettings(
     val blockPopups: Boolean = true,
     val blockAdRedirects: Boolean = true,
     val javascriptEnabled: Boolean = true,
-    val theme: String = "System" // "System", "Light", "Dark", "OLED"
+    val theme: String = "System", // "System", "Light", "Dark", "OLED"
+    val searchEngine: String = "Google" // "Google", "YouTube"
 )
 
 class BrowserPreferences(context: Context) {
@@ -26,7 +27,8 @@ class BrowserPreferences(context: Context) {
             blockPopups = prefs.getBoolean(KEY_BLOCK_POPUPS, true),
             blockAdRedirects = prefs.getBoolean(KEY_BLOCK_AD_REDIRECTS, true),
             javascriptEnabled = prefs.getBoolean(KEY_JS_ENABLED, true),
-            theme = prefs.getString(KEY_THEME, "System") ?: "System"
+            theme = prefs.getString(KEY_THEME, "System") ?: "System",
+            searchEngine = prefs.getString(KEY_SEARCH_ENGINE, "Google") ?: "Google"
         )
     }
 
@@ -45,6 +47,12 @@ class BrowserPreferences(context: Context) {
         _settings.value = _settings.value.copy(javascriptEnabled = enabled)
     }
 
+    fun setSearchEngine(engine: String) {
+        val validEngine = if (engine.equals("YouTube", ignoreCase = true)) "YouTube" else "Google"
+        prefs.edit { putString(KEY_SEARCH_ENGINE, validEngine) }
+        _settings.value = _settings.value.copy(searchEngine = validEngine)
+    }
+
     fun setTheme(theme: String) {
         prefs.edit { putString(KEY_THEME, theme) }
         _settings.value = _settings.value.copy(theme = theme)
@@ -55,6 +63,7 @@ class BrowserPreferences(context: Context) {
         private const val KEY_BLOCK_AD_REDIRECTS = "browser_block_ad_redirects"
         private const val KEY_JS_ENABLED = "browser_js_enabled"
         private const val KEY_THEME = "browser_theme"
+        private const val KEY_SEARCH_ENGINE = "browser_search_engine"
 
         @Volatile
         private var INSTANCE: BrowserPreferences? = null

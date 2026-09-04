@@ -169,19 +169,29 @@ private val BROWSER_SHORTCUTS = listOf(
     )
 )
 
-fun resolveBrowserUrl(input: String): String {
+fun resolveBrowserUrl(input: String, searchEngine: String = "Google"): String {
     val trimmed = input.trim()
-    if (trimmed.isBlank()) return "https://m.youtube.com"
+    val isYouTube = searchEngine.equals("YouTube", ignoreCase = true)
+    val defaultHome = if (isYouTube) "https://m.youtube.com" else "https://www.google.com"
+    if (trimmed.isBlank()) return defaultHome
+
+    fun buildSearchUrl(query: String): String {
+        return try {
+            val encoded = URLEncoder.encode(query, "UTF-8")
+            if (isYouTube) {
+                "https://m.youtube.com/results?search_query=$encoded"
+            } else {
+                "https://www.google.com/search?q=$encoded"
+            }
+        } catch (_: Exception) {
+            defaultHome
+        }
+    }
 
     // Block dangerous local and script schemes
     val lower = trimmed.lowercase()
     if (lower.startsWith("javascript:") || lower.startsWith("file:") || lower.startsWith("content:") || lower.startsWith("data:")) {
-        return try {
-            val encoded = URLEncoder.encode(trimmed, "UTF-8")
-            "https://m.youtube.com/results?search_query=$encoded"
-        } catch (_: Exception) {
-            "https://m.youtube.com"
-        }
+        return buildSearchUrl(trimmed)
     }
 
     if (trimmed.startsWith("http://", ignoreCase = true) ||
@@ -195,12 +205,7 @@ fun resolveBrowserUrl(input: String): String {
         return "https://$trimmed"
     }
 
-    return try {
-        val encoded = URLEncoder.encode(trimmed, "UTF-8")
-        "https://m.youtube.com/results?search_query=$encoded"
-    } catch (_: Exception) {
-        "https://m.youtube.com"
-    }
+    return buildSearchUrl(trimmed)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -271,7 +276,10 @@ fun BrowserScreen(
                 viewModel.mediaDetector.onHtml5ScanResult(currentUrl, result)
             }
             webView.evaluateJavascript(viewModel.mediaDetector.inlineButtonInjectorScript, null)
-            Toast.makeText(context, "Analyse de la page effectuée", Toast.LENGTH_SHORT).show()
+            if (currentUrl.isNotBlank() && currentUrl != "about:blank") {
+                viewModel.scanPageWithExtractor(currentUrl)
+            }
+            Toast.makeText(context, "Analyse approfondie de la page en cours...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -349,7 +357,7 @@ fun BrowserScreen(
             onClearMedia = { viewModel.mediaDetector.clear() },
             onSubmit = { input ->
                 keyboardController?.hide()
-                val targetUrl = resolveBrowserUrl(input)
+                val targetUrl = resolveBrowserUrl(input, browserSettings.searchEngine)
                 showStartPage = false
                 currentUrl = targetUrl
                 urlInputText = targetUrl
@@ -416,7 +424,7 @@ fun BrowserScreen(
                         webViewInstance?.loadUrl(shortcutUrl)
                     },
                     onSearchQuery = { query ->
-                        val targetUrl = resolveBrowserUrl(query)
+                        val targetUrl = resolveBrowserUrl(query, browserSettings.searchEngine)
                         showStartPage = false
                         currentUrl = targetUrl
                         urlInputText = targetUrl

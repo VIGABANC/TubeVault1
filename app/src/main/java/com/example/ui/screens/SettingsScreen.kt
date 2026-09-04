@@ -278,6 +278,41 @@ fun SettingsScreen(
                         testTag = "switch_auto_retry"
                     )
 
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
+
+                    // Public Download Folder display
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Dossier de stockage public",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Stockage interne / Download / TubeVault",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Les vidéos normales y sont enregistrées et visibles dans la Galerie, VLC et les gestionnaires de fichiers. Le Coffre-fort (Vault) reste chiffré et privé.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+
                 }
             }
 
@@ -310,6 +345,42 @@ fun SettingsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
+
+                    // Moteur de recherche par défaut
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Moteur de recherche par défaut",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Utilisé lors de la saisie de texte dans la barre d'adresse",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("Google", "YouTube").forEach { engine ->
+                                FilterChip(
+                                    selected = browserSettings.searchEngine.equals(engine, ignoreCase = true),
+                                    onClick = { viewModel.setSearchEngine(engine) },
+                                    label = { Text(if (engine == "Google") "Google (Défaut)" else "YouTube") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
 
                     // Switch: Bloquer les popups
                     BrowserSettingSwitchRow(

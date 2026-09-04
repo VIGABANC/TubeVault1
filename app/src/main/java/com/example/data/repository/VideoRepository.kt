@@ -10,23 +10,34 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class VideoRepository(
-    private val videoDao: VideoDao
+    private val videoDao: VideoDao,
+    private val context: Context? = null
 ) {
     val allVideos: Flow<List<DownloadedVideo>> = videoDao.getAllVideos()
+
+    suspend fun getAllVideosList(): List<DownloadedVideo> = withContext(Dispatchers.IO) {
+        videoDao.getAllVideosList()
+    }
 
     suspend fun saveDownloadedVideo(video: DownloadedVideo): Long = withContext(Dispatchers.IO) {
         videoDao.insertVideo(video)
     }
 
-    suspend fun deleteVideo(video: DownloadedVideo) = withContext(Dispatchers.IO) {
-        // Also delete the physical file from internal scoped storage
-        try {
-            val file = File(video.filePath)
-            if (file.exists()) {
-                file.delete()
-            }
-        } catch (_: Exception) {
-            // Ignore failure if file was already removed
+    suspend fun deleteVideo(video: DownloadedVideo, targetContext: Context? = context) = withContext(Dispatchers.IO) {
+        // Delete from MediaStore and/or filesystem
+        targetContext?.let { ctx ->
+            com.example.data.storage.TubeVaultStorageManager.deleteVideoMedia(
+                context = ctx,
+                contentUriString = video.contentUri,
+                filePath = video.filePath
+            )
+        } ?: run {
+            try {
+                val file = File(video.filePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (_: Exception) {}
         }
         videoDao.deleteVideo(video)
     }

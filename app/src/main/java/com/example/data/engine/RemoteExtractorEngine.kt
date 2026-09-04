@@ -113,6 +113,9 @@ class RemoteExtractorEngine(
 
     override fun supports(url: String): Boolean {
         val trimmed = url.trim()
+        if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
+            return true
+        }
         val platform = Platform.detect(trimmed)
         if (platform != Platform.OTHER) return true
         if (apiClient.extractYouTubeId(trimmed) != null) return true

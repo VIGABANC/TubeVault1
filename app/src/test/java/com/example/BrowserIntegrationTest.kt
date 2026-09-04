@@ -17,9 +17,17 @@ import org.robolectric.annotation.Config
 class BrowserIntegrationTest {
 
     @Test
-    fun `resolveBrowserUrl converts text query to YouTube search`() {
+    fun `resolveBrowserUrl converts text query to Google search by default`() {
         val query = "lofi hip hop beats"
         val resolved = resolveBrowserUrl(query)
+        assertTrue(resolved.startsWith("https://www.google.com/search?q="))
+        assertTrue(resolved.contains("lofi"))
+    }
+
+    @Test
+    fun `resolveBrowserUrl converts text query to YouTube search when engine is YouTube`() {
+        val query = "lofi hip hop beats"
+        val resolved = resolveBrowserUrl(query, searchEngine = "YouTube")
         assertTrue(resolved.startsWith("https://m.youtube.com/results?search_query="))
         assertTrue(resolved.contains("lofi"))
     }

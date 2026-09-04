@@ -28,5 +28,6 @@ data class DownloadedVideo(
     val topics: String? = null, // Comma separated list of topics
     val transcriptJson: String? = null, // JSON containing the serialized AiTranscript
     val aiChaptersJson: String? = null, // JSON containing list of AiChapter
-    val isPrivate: Boolean = false
+    val isPrivate: Boolean = false,
+    val contentUri: String? = null
 )

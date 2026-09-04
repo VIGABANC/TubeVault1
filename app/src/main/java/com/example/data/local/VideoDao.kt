@@ -13,11 +13,17 @@ interface VideoDao {
     @Query("SELECT * FROM downloaded_videos ORDER BY downloadTimestamp DESC")
     fun getAllVideos(): Flow<List<DownloadedVideo>>
 
+    @Query("SELECT * FROM downloaded_videos")
+    suspend fun getAllVideosList(): List<DownloadedVideo>
+
     @Query("SELECT * FROM downloaded_videos WHERE id = :id LIMIT 1")
     suspend fun getVideoById(id: Long): DownloadedVideo?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVideo(video: DownloadedVideo): Long
+
+    @androidx.room.Update
+    suspend fun updateVideo(video: DownloadedVideo)
 
     @Delete
     suspend fun deleteVideo(video: DownloadedVideo)

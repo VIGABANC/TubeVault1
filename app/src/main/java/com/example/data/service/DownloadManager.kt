@@ -541,14 +541,33 @@ class DownloadManager private constructor(private val appContext: Context) {
             )
         }
 
-        // Finalize completed download into database
+        // Finalize completed download into public MediaStore storage (Download/TubeVault)
+        val finalFileSize = targetFile.length().coerceAtLeast(task.totalBytes)
+        val publishResult = com.example.data.storage.TubeVaultStorageManager.publishVerifiedFile(
+            context = appContext,
+            sourceFile = targetFile,
+            title = task.metadata.title,
+            quality = task.selectedFormat.quality,
+            extension = ext
+        )
+
+        val (finalContentUri, finalDisplayPath) = if (publishResult.isSuccess) {
+            val pub = publishResult.getOrThrow()
+            // Clean up temporary assembly file now that MediaStore entry is populated
+            try { targetFile.delete() } catch (_: Exception) {}
+            Pair(pub.contentUri.toString(), pub.displayPath)
+        } else {
+            Pair(null, targetFile.absolutePath)
+        }
+
         val videoEntity = DownloadedVideo(
             title = task.metadata.title,
             thumbnailUrl = task.metadata.thumbnailUrl,
             durationText = task.metadata.durationText,
             resolution = task.selectedFormat.quality,
-            filePath = targetFile.absolutePath,
-            fileSizeBytes = targetFile.length(),
+            filePath = finalDisplayPath,
+            contentUri = finalContentUri,
+            fileSizeBytes = finalFileSize,
             sourceUrl = task.metadata.sourceUrl,
             platform = task.platform.id,
             downloadTimestamp = System.currentTimeMillis()
@@ -562,11 +581,11 @@ class DownloadManager private constructor(private val appContext: Context) {
         val completedTask = task.copy(
             status = DownloadStatus.COMPLETED,
             progress = 1f,
-            bytesDownloaded = targetFile.length(),
-            totalBytes = targetFile.length(),
+            bytesDownloaded = finalFileSize,
+            totalBytes = finalFileSize,
             speedText = "Terminé",
             etaText = "",
-            localFilePath = targetFile.absolutePath,
+            localFilePath = finalDisplayPath,
             savedVideo = finalizedVideo
         )
 

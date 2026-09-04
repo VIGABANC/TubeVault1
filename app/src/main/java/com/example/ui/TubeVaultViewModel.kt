@@ -66,7 +66,7 @@ enum class LibrarySortOption(val displayName: String) {
 class TubeVaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = TubeVaultDatabase.getDatabase(application)
-    private val repository = VideoRepository(database.videoDao())
+    private val repository = VideoRepository(database.videoDao(), application)
     private val vaultRepository = com.example.data.repository.VaultRepository(database.vaultDao())
     private val vaultManager = com.example.data.service.VaultManager(application, vaultRepository)
     val vaultSessionManager = VaultSessionManager.getInstance()
@@ -79,7 +79,7 @@ class TubeVaultViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch(Dispatchers.IO) {
             val result = vaultManager.moveToVault(video)
             if (result.isSuccess) {
-                repository.deleteVideo(video)
+                repository.deleteVideo(video, getApplication())
                 kotlinx.coroutines.withContext(Dispatchers.Main) { onResult(true) }
             } else {
                 kotlinx.coroutines.withContext(Dispatchers.Main) { onResult(false) }
@@ -93,13 +93,30 @@ class TubeVaultViewModel(application: Application) : AndroidViewModel(applicatio
             if (result.isSuccess) {
                 val meta = vaultManager.getDecryptedMetadata(vaultItem)
                 if (meta != null) {
+                    val ext = targetFile.extension.ifBlank { "mp4" }
+                    val pubResult = com.example.data.storage.TubeVaultStorageManager.publishVerifiedFile(
+                        context = getApplication(),
+                        sourceFile = targetFile,
+                        title = meta.title,
+                        quality = meta.resolution,
+                        extension = ext
+                    )
+                    val (contentUri, displayPath) = if (pubResult.isSuccess) {
+                        val pub = pubResult.getOrThrow()
+                        try { targetFile.delete() } catch (_: Exception) {}
+                        Pair(pub.contentUri.toString(), pub.displayPath)
+                    } else {
+                        Pair(null, targetFile.absolutePath)
+                    }
+
                     val newVideo = DownloadedVideo(
                         title = meta.title,
                         thumbnailUrl = meta.thumbnailUrl,
                         durationText = meta.durationText,
                         resolution = meta.resolution,
-                        filePath = targetFile.absolutePath,
-                        fileSizeBytes = targetFile.length(),
+                        filePath = displayPath,
+                        contentUri = contentUri,
+                        fileSizeBytes = targetFile.takeIf { it.exists() }?.length() ?: 1024L,
                         sourceUrl = meta.sourceUrl,
                         platform = meta.platform,
                         shortSummary = meta.notes,
@@ -178,6 +195,14 @@ class TubeVaultViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setBrowserJavascriptEnabled(enabled: Boolean) {
         browserPreferences.setJavascriptEnabled(enabled)
+    }
+
+    fun setSearchEngine(engine: String) {
+        browserPreferences.setSearchEngine(engine)
+    }
+
+    fun scanPageWithExtractor(url: String) {
+        mediaDetector.scanPageUrlWithEngine(url, extractorEngine, viewModelScope)
     }
 
     fun setTheme(theme: String) {
@@ -347,6 +372,11 @@ class TubeVaultViewModel(application: Application) : AndroidViewModel(applicatio
     val currentPlayingVideo: StateFlow<DownloadedVideo?> = _currentPlayingVideo.asStateFlow()
 
     init {
+        // Automatic legacy downloads migration to public Download/TubeVault
+        viewModelScope.launch(Dispatchers.IO) {
+            com.example.data.storage.TubeVaultStorageManager.migrateLegacyDownloads(application, repository)
+        }
+
         viewModelScope.launch {
             libraryVideos.collect { videos ->
                 val settings = aiSettings.value
@@ -523,7 +553,7 @@ class TubeVaultViewModel(application: Application) : AndroidViewModel(applicatio
             if (_currentPlayingVideo.value?.id == video.id) {
                 _currentPlayingVideo.value = null
             }
-            repository.deleteVideo(video)
+            repository.deleteVideo(video, getApplication())
         }
     }
 
