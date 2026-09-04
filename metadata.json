@@ -1,0 +1,8 @@
+{
+  "name": "TubeVault",
+  "description": "Native Android video downloader, private vault, and media player.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

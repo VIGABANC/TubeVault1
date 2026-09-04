@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="vault_media/"/>
+        <exclude domain="file" path="vault_thumbnails/"/>
+        <exclude domain="database" path="tubevault.db"/>
+        <exclude domain="database" path="tubevault.db-shm"/>
+        <exclude domain="database" path="tubevault.db-wal"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="vault_media/"/>
+        <exclude domain="file" path="vault_thumbnails/"/>
+        <exclude domain="database" path="tubevault.db"/>
+        <exclude domain="database" path="tubevault.db-shm"/>
+        <exclude domain="database" path="tubevault.db-wal"/>
+    </device-transfer>
+</data-extraction-rules>
